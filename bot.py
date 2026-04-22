@@ -1,57 +1,47 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CallbackQueryHandler, ContextTypes, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-BOT_TOKEN = "8654558605:AAHYRfVvKiAPjiDEkeFTAMFvgeVoWdR9wtw"
+TOKEN = "8654558605:AAHYRfVvKiAPjiDEkeFTAMFvgeVoWdR9wtw"
+CHANNEL_USERNAME = "@fadifva"  # غيره الى قناتك
+WEB_APP_URL = "https://example.com"
 
-games = {}
+async def is_user_subscribed(user_id, bot):
+    try:
+        member = await bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except:
+        return False
 
-async def chess(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    bot = context.bot
 
-    games[chat_id] = {"player1": user.id, "player1_name": user.first_name}
+    subscribed = await is_user_subscribed(user_id, bot)
+
+    if not subscribed:
+        keyboard = [
+            [InlineKeyboardButton("📢 اشترك بالقناة", url=f"https://t.me/{CHANNEL_USERNAME.replace('@','')}")],
+            [InlineKeyboardButton("✅ تحقق من الاشتراك", callback_data="check_sub")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(
+            "⚠️ لازم تشترك بالقناة حتى تستخدم البوت",
+            reply_markup=reply_markup
+        )
+        return
 
     keyboard = [
-        [InlineKeyboardButton("🎮 انضمام للتحدي", callback_data="join")]
+        [InlineKeyboardButton("🎮 العب الآن", web_app=WebAppInfo(url=WEB_APP_URL))]
     ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        f"♟️ {user.first_name} يريد يلعب شطرنج\nاضغط للانضمام 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        "🔥 اهلاً بيك!\nاضغط وابدأ اللعب\n\nDeveloped by Ali Salem",
+        reply_markup=reply_markup
     )
 
-async def join(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user = query.from_user
-    chat_id = query.message.chat.id
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
 
-    await query.answer()
-
-    if chat_id not in games:
-        await query.answer("ماكو تحدي حاليًا", show_alert=True)
-        return
-
-    game = games[chat_id]
-
-    if game["player1"] == user.id:
-        await query.answer("ما تگدر تلعب ويا نفسك", show_alert=True)
-        return
-
-    await query.edit_message_text(
-        f"✅ تم قبول التحدي\n\n"
-        f"اللاعب الأول: {game['player1_name']}\n"
-        f"اللاعب الثاني: {user.first_name}\n\n"
-        f"المرحلة الجاية نربط واجهة اللعبة."
-    )
-
-def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    app.add_handler(MessageHandler(filters.Regex(r"^شطرنج$"), chess))
-    app.add_handler(CallbackQueryHandler(join, pattern="^join$"))
-
-    print("Bot is running...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+app.run_polling()
