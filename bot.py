@@ -24,7 +24,7 @@ from telegram.ext import (
 # الإعدادات
 # =========================
 BOT_TOKEN = "8654558605:AAHYRfVvKiAPjiDEkeFTAMFvgeVoWdR9wtw"
-REQUIRED_CHANNEL = "@fadigva"  # مثال: @fadifva
+REQUIRED_CHANNEL = "@fadifva"  # مثال: @fadifva
 
 DB_NAME = "chess_bot.db"
 
